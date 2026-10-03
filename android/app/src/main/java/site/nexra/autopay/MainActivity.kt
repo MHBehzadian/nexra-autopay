@@ -61,16 +61,12 @@ class MainActivity : ComponentActivity() {
         refresh()
     }
 
+    /** The screen is refreshed by onResume once the dialog closes. */
     private fun ask() {
         val missing = needed.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
         if (missing.isNotEmpty()) ActivityCompat.requestPermissions(this, missing.toTypedArray(), 1)
-    }
-
-    override fun onRequestPermissionsResult(code: Int, perms: Array<out String>, res: IntArray) {
-        super.onRequestPermissionsResult(code, perms, res)
-        refresh()
     }
 
     private fun pair() {
