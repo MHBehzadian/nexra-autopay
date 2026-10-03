@@ -11,12 +11,16 @@
 if (PHP_SAPI !== 'cli') {
     die("cli only\n");
 }
+chdir(__DIR__);
+$from_id = 0;
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/botapi.php';
 require_once __DIR__ . '/jdf.php';
-require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/text.php';
-require_once __DIR__ . '/panels.php';
 require_once __DIR__ . '/keyboard.php';
+require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/panels.php';
+require_once __DIR__ . '/vendor/autoload.php';
 require_once __DIR__ . '/autopaylib.php';
 
 $cmd = isset($argv[1]) ? $argv[1] : 'status';

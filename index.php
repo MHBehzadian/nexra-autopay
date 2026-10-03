@@ -2075,6 +2075,7 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
                 $autopay_note = autopay_price_note($autopay_amount);
             }
         }
+        $autopay_waiting = ($autopay_note !== "");
         $Processing_value = number_format($autopay_amount);
         $textcart = sprintf($textbotlang['users']['moeny']['carttext'], $Processing_value, $PaySetting) . $autopay_note;
         preg_match_all('/\d+/', $PaySetting, $Matches);
@@ -2087,7 +2088,9 @@ if ($text == $datatextbot['text_Add_Balance'] || $text == "/wallet") {
             deletemessage($from_id, $message_id);
             sendmessage($from_id, $textcart, $backuser, 'HTML');
         }
-        step('cart_to_cart_user', $from_id);
+        // When the deposit confirms itself there is nothing to ask the customer
+        // for, so the bot stops waiting for a receipt photo.
+        step($autopay_waiting ? 'home' : 'cart_to_cart_user', $from_id);
     }
     if ($datain == "aqayepardakht") {
         if ($user['Processing_value'] < 5000) {

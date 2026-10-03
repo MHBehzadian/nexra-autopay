@@ -12,11 +12,13 @@
  */
 
 require_once 'config.php';
+require_once 'botapi.php';
 require_once 'jdf.php';
-require_once 'functions.php';
 require_once 'text.php';
-require_once 'panels.php';
 require_once 'keyboard.php';
+require_once 'functions.php';
+require_once 'panels.php';
+require_once 'vendor/autoload.php';
 require_once 'autopaylib.php';
 
 header('Content-Type: application/json; charset=utf-8');
