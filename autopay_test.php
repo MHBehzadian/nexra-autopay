@@ -49,6 +49,7 @@ switch ($cmd) {
             echo "--- sample " . ($i + 1) . "\n";
             echo "   direction : " . $p['direction'] . "\n";
             echo "   amount    : " . number_format($p['amount']) . " toman\n";
+            echo "   candidates: " . implode(' | ', array_map('number_format', $p['candidates'])) . "\n";
             echo "   card      : " . ($p['card'] ?: '-') . "\n";
         }
         break;

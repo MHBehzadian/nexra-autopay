@@ -60,8 +60,10 @@ function autopay_digits($text)
 /**
  * Pulls direction, amount and the destination card out of a bank SMS.
  *
- * Returns amount in TOMANS. Iranian banks write rials, so a number that looks
- * like rials is divided by ten - a deposit is never a fraction of a toman.
+ * Rather than deciding whether a bank writes rials or tomans - banks disagree,
+ * and guessing wrong silently loses a payment - every reading of the number is
+ * returned in 'candidates'. The matcher then accepts the one that an order is
+ * actually waiting for, so the unit sorts itself out.
  */
 function autopay_parse_sms($raw)
 {
@@ -69,14 +71,16 @@ function autopay_parse_sms($raw)
     $flat = preg_replace('/\s+/u', ' ', $text);
 
     $out = array(
-        'direction' => 'unknown',
-        'amount'    => 0,
-        'card'      => '',
-        'balance'   => 0,
+        'direction'  => 'unknown',
+        'amount'     => 0,
+        'candidates' => array(),
+        'card'       => '',
     );
 
-    $in_words  = array('واریز', 'وار?ز', 'بستانکار', 'افزايش', 'افزایش', 'deposit', 'credit');
-    $out_words = array('برداشت', 'بدهکار', 'خريد', 'خرید', 'انتقال از', 'withdraw', 'debit', 'purchase');
+    // "انتقال از" is how a deposit names the sender, so it belongs here and not
+    // among the withdrawals; a withdrawal says "انتقال به".
+    $in_words  = array('واریز', 'بستانکار', 'افزايش', 'افزایش', 'انتقال از', 'deposit', 'credit');
+    $out_words = array('برداشت', 'بدهکار', 'خريد', 'خرید', 'انتقال به', 'کارمزد', 'withdraw', 'debit', 'purchase');
 
     foreach ($out_words as $w) {
         if (mb_strpos($flat, $w) !== false) {
@@ -93,14 +97,16 @@ function autopay_parse_sms($raw)
         }
     }
 
-    // amount: the number right after a deposit word, else the largest number
-    // that is not the balance and not a card/account number
+    // The balance is usually the biggest number in the message, so hide it
+    // before looking for the amount - otherwise the fallback below grabs it.
+    $hunting = preg_replace('/(?:مانده|موجودی|balance)[^\d]{0,20}\d+/ui', ' ', $flat);
+
     $amount = 0;
-    if (preg_match('/(?:واریز|وار.ز|بستانکار|افزایش|افزايش)[^\d]{0,20}(\d{3,})/u', $flat, $m)) {
+    if (preg_match('/(?:واریز|وار.ز|بستانکار|افزایش|افزايش)[^\d]{0,20}(\d{3,})/u', $hunting, $m)) {
         $amount = intval($m[1]);
     }
     if ($amount === 0) {
-        preg_match_all('/\d{3,}/', $flat, $all);
+        preg_match_all('/\d{3,}/', $hunting, $all);
         foreach ($all[0] as $n) {
             if (strlen($n) >= 14) {   // card / account / tracking numbers
                 continue;
@@ -111,11 +117,15 @@ function autopay_parse_sms($raw)
         }
     }
 
-    // rial -> toman
-    if ($amount > 0 && $amount % 10 === 0) {
-        $amount = intval($amount / 10);
+    $candidates = array();
+    if ($amount > 0) {
+        if ($amount % 10 === 0) {
+            $candidates[] = intval($amount / 10);   // rials, the common case
+        }
+        $candidates[] = $amount;                    // already tomans
     }
-    $out['amount'] = $amount;
+    $out['candidates'] = array_values(array_unique($candidates));
+    $out['amount'] = count($candidates) ? $candidates[0] : 0;
 
     if (preg_match('/(\d{4})\s*\*{2,}|\*{2,}\s*(\d{4})/', $flat, $c)) {
         $out['card'] = $c[1] !== '' ? $c[1] : $c[2];
@@ -291,7 +301,14 @@ function autopay_handle_sms($raw, $sender, $sent_at)
     }
 
     autopay_release_old();
-    $order = autopay_find_order($p['amount']);
+    $order = null;
+    foreach ($p['candidates'] as $candidate) {
+        $order = autopay_find_order($candidate);
+        if ($order) {
+            $pdo->prepare("UPDATE autopay_sms SET amount = ? WHERE id = ?")->execute([$candidate, $sms_id]);
+            break;
+        }
+    }
     if (!$order) {
         $pdo->prepare("UPDATE autopay_sms SET status = 'unmatched' WHERE id = ?")->execute([$sms_id]);
         autopay_tell_admins_unmatched($p['amount']);
