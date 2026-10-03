@@ -1,12 +1,20 @@
 name: Build APK
 
+# The phone app is built here so nobody needs Android Studio: every push that
+# touches it leaves a ready APK under the run's artifacts.
+#
+# `paths` and `tags` together under `push` would mean "a tag push that also
+# touches these files", which never happens - so branch pushes are the trigger
+# and a release is attached from its own event.
 on:
   push:
+    branches:
+      - main
     paths:
       - 'android/**'
       - '.github/workflows/android.yml'
-    tags:
-      - 'v*'
+  release:
+    types: [published]
   workflow_dispatch:
 
 jobs:
@@ -35,7 +43,7 @@ jobs:
           if-no-files-found: error
 
       - name: Attach to release
-        if: startsWith(github.ref, 'refs/tags/')
+        if: github.event_name == 'release'
         uses: softprops/action-gh-release@v2
         with:
           files: android/app/build/outputs/apk/debug/app-debug.apk
