@@ -832,7 +832,7 @@ function autopay_panel_text()
         . "وضعیت: " . ($on ? "روشن ✅" : "خاموش ⛔️") . "\n"
         . "آخرین ارتباط گوشی: " . $seen . "\n"
         . (empty($s['device_info']) ? "" : "دستگاه: " . $s['device_info'] . "\n")
-        . "\nسفارش‌های در انتظار: " . $open . "\n"
+        . "\nپرداخت‌های در انتظار واریز: " . $open . "\n"
         . "پرداخت‌های خودکار تأییدشده: " . $paid . "\n"
         . "پیامک‌های دریافتی: " . $sms . "\n\n"
         . "آدرس سرور برای برنامه:\n<code>https://" . $domainhosts . "/autopay.php</code>";
@@ -849,7 +849,7 @@ function autopay_panel_keyboard()
             [['text' => $on ? '⛔️ خاموش کردن' : '✅ روشن کردن', 'callback_data' => 'autopay_toggle']],
             [['text' => '🔑 نمایش کلید اتصال', 'callback_data' => 'autopay_key']],
             [['text' => '♻️ ساخت کلید جدید', 'callback_data' => 'autopay_newkey']],
-            [['text' => '📨 آخرین پیامک‌ها', 'callback_data' => 'autopay_sms'], ['text' => '🧾 سفارش‌های باز', 'callback_data' => 'autopay_orders']],
+            [['text' => '📨 آخرین پیامک‌ها', 'callback_data' => 'autopay_sms'], ['text' => '🧾 در انتظار واریز', 'callback_data' => 'autopay_orders']],
             [['text' => '🔄 بروزرسانی', 'callback_data' => 'autopay_home']],
         ]
     ]);
@@ -900,9 +900,9 @@ if ($datain == "autopay_sms") {
 if ($datain == "autopay_orders") {
     $rows = $pdo->query("SELECT * FROM autopay_order WHERE status = 'open' ORDER BY id DESC LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
     if (!$rows) {
-        $t = "سفارش بازی وجود ندارد.";
+        $t = "هیچ پرداختی در انتظار واریز نیست.";
     } else {
-        $t = "🧾 <b>سفارش‌های در انتظار واریز</b>\n\n";
+        $t = "🧾 <b>در انتظار واریز</b>\n\n";
         foreach ($rows as $r) {
             $t .= "• کاربر <code>" . $r['id_user'] . "</code> — باید <b>" . number_format($r['amount']) . "</b> تومان بزند"
                 . " (قیمت " . number_format($r['base_price']) . ")\n   از " . $r['created_at'] . "\n";

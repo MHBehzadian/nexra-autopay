@@ -313,7 +313,7 @@ function autopay_tell_admins_paid($done)
     $text = "✅ <b>پرداخت خودکار تأیید شد</b>\n\n"
         . "کاربر: <code>" . $done['id_user'] . "</code>\n"
         . "مبلغ: " . number_format($done['amount']) . " تومان\n"
-        . "سفارش: <code>" . $done['id_order'] . "</code>";
+        . "کد پیگیری: <code>" . $done['id_order'] . "</code>";
     foreach ($admins as $admin) {
         sendmessage($admin, $text, null, 'HTML');
     }
@@ -321,10 +321,25 @@ function autopay_tell_admins_paid($done)
 
 function autopay_tell_admins_unmatched($amount)
 {
+    global $pdo;
     $admins = select("admin", "id_admin", null, null, "FETCH_COLUMN");
-    $text = "⚠️ <b>واریز بدون سفارش متناظر</b>\n\n"
-        . "مبلغ: " . number_format($amount) . " تومان\n"
-        . "هیچ سفارشی منتظر این مبلغ دقیق نبود، پس دستی بررسی کن.";
+
+    // Showing what IS being waited for turns "why did this not match?" into a
+    // one-glance answer: wrong amount, already confirmed, or nothing pending.
+    $waiting = "";
+    $rows = $pdo->query("SELECT id_user, amount FROM autopay_order WHERE status = 'open' ORDER BY id DESC LIMIT 5")
+        ->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($rows as $r) {
+        $waiting .= "\n• " . number_format($r['amount']) . " تومان — کاربر <code>" . $r['id_user'] . "</code>";
+    }
+
+    $text = "⚠️ <b>واریزی که با هیچ پرداختِ در انتظاری جور نشد</b>\n\n"
+        . "مبلغ واریزشده: " . number_format($amount) . " تومان\n\n"
+        . ($waiting === ""
+            ? "در حال حاضر هیچ پرداختی در انتظار واریز نیست؛ یعنی یا این واریز شخصی بوده، "
+              . "یا قبلاً همان پرداخت تأیید شده است."
+            : "پرداخت‌هایی که منتظرشانیم:" . $waiting
+              . "\n\nاگر مشتری مبلغ را رُند کرده یا اشتباه زده، دستی تأییدش کن.");
     foreach ($admins as $admin) {
         sendmessage($admin, $text, null, 'HTML');
     }
