@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">تأیید خودکار Nexra</string>
+    <string name="pairing_hint">کلید اتصال را از بات بگیر (بخش «تأیید خودکار پرداخت» → «نمایش کلید اتصال») و اینجا جای‌گذاری کن:</string>
+    <string name="pair">اتصال به بات</string>
+    <string name="test">تست ارتباط با سرور</string>
+    <string name="scan">بازبینی پیامک‌های ۲۴ ساعت اخیر</string>
+    <string name="battery">اجازه‌ی اجرای دائمی (بهینه‌سازی باتری)</string>
+    <string name="senders_hint">فقط پیامک این فرستنده‌ها ارسال شود (با , جدا کن؛ خالی یعنی همه‌ی پیامک‌های بانکی):</string>
+    <string name="save_senders">ذخیره‌ی فیلتر فرستنده</string>
+    <string name="log_title">رویدادها</string>
+</resources>
